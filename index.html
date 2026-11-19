@@ -179,9 +179,16 @@
     });
   }
 
+  function extractUrl(text){
+    var m = (text || "").match(/https?:\/\/[^\s]+/);
+    return m ? m[0] : (text || "").trim();
+  }
+
   function makeQR(){
-    var url = document.getElementById("urlInput").value.trim();
+    var raw = document.getElementById("urlInput").value;
+    var url = extractUrl(raw);
     if(!url){ return; }
+    document.getElementById("urlInput").value = url;
     var box = document.getElementById("qrcode");
     box.innerHTML = "";
     qr = new QRCode(box, {
@@ -202,7 +209,7 @@
   document.getElementById("pasteBtn").onclick = async function(){
     try{
       var text = await navigator.clipboard.readText();
-      if(text){ document.getElementById("urlInput").value = text; }
+      if(text){ document.getElementById("urlInput").value = extractUrl(text); }
     }catch(e){
       alert("クリップボードから読み取れませんでした。手で貼り付けてください。");
     }
