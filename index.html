@@ -191,13 +191,18 @@
     document.getElementById("urlInput").value = url;
     var box = document.getElementById("qrcode");
     box.innerHTML = "";
-    qr = new QRCode(box, {
-      text: url,
-      width: 240,
-      height: 240,
-      colorDark: "#4a4036",
-      colorLight: "#ffffff"
-    });
+    try{
+      qr = new QRCode(box, {
+        text: url,
+        width: 240,
+        height: 240,
+        colorDark: "#4a4036",
+        colorLight: "#ffffff"
+      });
+    }catch(e){
+      alert("QRコードを作れませんでした（" + e.message + "）。URLが長すぎる可能性があります。");
+      return;
+    }
     document.getElementById("urlShow").textContent = url;
     document.getElementById("qrWrap").style.display = "block";
     document.getElementById("qrWrap").scrollIntoView({behavior:"smooth", block:"center"});
