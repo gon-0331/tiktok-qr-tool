@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>QRコード作成ツール</title>
+<style>
+  :root{
+    --cream:#fff8ef;
+    --blue:#bfe8f5;
+    --blue-deep:#5fb8d6;
+    --pink:#ffd9e8;
+    --pink-deep:#f08fb0;
+    --green:#dcf2d9;
+    --yellow:#fff0b3;
+    --ink:#4a4036;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+    font-size:18px;
+    line-height:1.6;
+    padding:20px 16px 60px;
+  }
+  h1{
+    font-size:24px;
+    text-align:center;
+    margin:8px 0 20px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:24px;
+    padding:20px;
+    margin:0 auto 20px;
+    max-width:460px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.05);
+  }
+  .card.blue{background:var(--blue);}
+  .card.pink{background:var(--pink);}
+  .card.green{background:var(--green);}
+  label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:8px;
+    font-size:17px;
+  }
+  textarea{
+    width:100%;
+    min-height:70px;
+    font-size:18px;
+    border:2px solid var(--blue-deep);
+    border-radius:14px;
+    padding:12px;
+    resize:vertical;
+    font-family:inherit;
+  }
+  .btnrow{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+  }
+  button{
+    flex:1;
+    font-size:17px;
+    font-weight:bold;
+    padding:14px 10px;
+    border:none;
+    border-radius:16px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .btn-main{background:var(--pink-deep); color:#fff;}
+  .btn-sub{background:var(--yellow);}
+  button:active{opacity:0.8;}
+  #qrWrap{
+    text-align:center;
+    margin-top:16px;
+    display:none;
+  }
+  #qrcode{
+    display:inline-block;
+    background:#fff;
+    padding:16px;
+    border-radius:20px;
+  }
+  #qrcode img, #qrcode canvas{
+    border-radius:8px;
+  }
+  .urlshow{
+    margin-top:10px;
+    font-size:14px;
+    color:#8a7f6e;
+    word-break:break-all;
+  }
+  .hint{
+    font-size:14px;
+    color:#8a7f6e;
+    margin-top:6px;
+  }
+  .history{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .history button{
+    text-align:left;
+    background:#fff;
+    border:2px solid var(--green);
+    font-weight:normal;
+    font-size:14px;
+    word-break:break-all;
+    flex:none;
+  }
+</style>
+</head>
+<body>
+
+<h1>📱 QRコード作成ツール</h1>
+
+<div class="card blue">
+  <label for="urlInput">招待URLを貼ってください</label>
+  <textarea id="urlInput" placeholder="https://... のURLをここに貼る"></textarea>
+  <div class="btnrow">
+    <button class="btn-sub" id="pasteBtn">📋 貼り付け</button>
+    <button class="btn-main" id="makeBtn">QRコードを作る</button>
+  </div>
+  <div class="hint">貼り付けたら「QRコードを作る」をタップ</div>
+</div>
+
+<div class="card pink" id="qrWrap">
+  <div id="qrcode"></div>
+  <div class="urlshow" id="urlShow"></div>
+  <div class="hint">この画面を子供のカメラで読み取ってもらってください</div>
+</div>
+
+<div class="card green" id="historyCard" style="display:none;">
+  <label>さっき使ったURL</label>
+  <div class="history" id="historyList"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  var qr = null;
+  var HKEY = "qrtool_history_v1";
+
+  function loadHistory(){
+    try{
+      return JSON.parse(localStorage.getItem(HKEY) || "[]");
+    }catch(e){ return []; }
+  }
+  function saveHistory(url){
+    try{
+      var list = loadHistory().filter(function(u){ return u !== url; });
+      list.unshift(url);
+      list = list.slice(0, 5);
+      localStorage.setItem(HKEY, JSON.stringify(list));
+      renderHistory();
+    }catch(e){}
+  }
+  function renderHistory(){
+    var list = loadHistory();
+    var card = document.getElementById("historyCard");
+    var box = document.getElementById("historyList");
+    box.innerHTML = "";
+    if(!list.length){ card.style.display = "none"; return; }
+    card.style.display = "block";
+    list.forEach(function(url){
+      var b = document.createElement("button");
+      b.textContent = url;
+      b.onclick = function(){
+        document.getElementById("urlInput").value = url;
+        makeQR();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function makeQR(){
+    var url = document.getElementById("urlInput").value.trim();
+    if(!url){ return; }
+    var box = document.getElementById("qrcode");
+    box.innerHTML = "";
+    qr = new QRCode(box, {
+      text: url,
+      width: 240,
+      height: 240,
+      colorDark: "#4a4036",
+      colorLight: "#ffffff"
+    });
+    document.getElementById("urlShow").textContent = url;
+    document.getElementById("qrWrap").style.display = "block";
+    document.getElementById("qrWrap").scrollIntoView({behavior:"smooth", block:"center"});
+    saveHistory(url);
+  }
+
+  document.getElementById("makeBtn").onclick = makeQR;
+
+  document.getElementById("pasteBtn").onclick = async function(){
+    try{
+      var text = await navigator.clipboard.readText();
+      if(text){ document.getElementById("urlInput").value = text; }
+    }catch(e){
+      alert("クリップボードから読み取れませんでした。手で貼り付けてください。");
+    }
+  };
+
+  renderHistory();
+</script>
+
+</body>
+</html>
